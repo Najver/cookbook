@@ -1,0 +1,64 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f5f5f5;
+}
+
+.container {
+    width: 400px; /* Zvětšili jsme šířku */
+    padding: 30px; /* Větší padding */
+    background-color: #ffffff;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 12px; /* Mírně větší zaoblení */
+    text-align: center;
+}
+
+h2 {
+    font-size: 28px; /* Zvětšili jsme velikost písma */
+    color: #333;
+    margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 15px; /* Větší padding uvnitř polí */
+    margin: 15px 0; /* Větší mezera mezi poli */
+    font-size: 18px; /* Zvětšili jsme velikost písma */
+    border: 1px solid #ddd;
+    border-radius: 8px; /* Větší zaoblení pro vstupní pole */
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    padding: 15px; /* Větší tlačítko */
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    border-radius: 8px; /* Větší zaoblení tlačítka */
+    cursor: pointer;
+    font-size: 18px; /* Zvětšili jsme velikost písma */
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.link {
+    margin-top: 20px; /* Větší mezera nad odkazem */
+    font-size: 16px; /* Mírně větší písmo pro odkaz */
+}
+
+.link a {
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+.link a:hover {
+    text-decoration: underline;
+}
