@@ -2,23 +2,23 @@ body {
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
-    align-items: center;
     min-height: 100vh;
     margin: 0;
     background-color: #f5f5f5;
 }
 
 .container {
-    width: 400px; /* Zvětšili jsme šířku */
-    padding: 30px; /* Větší padding */
+    align-self: center;
+    width: 400px;
+    padding: 30px;
     background-color: #ffffff;
     box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-    border-radius: 12px; /* Mírně větší zaoblení */
+    border-radius: 12px;
     text-align: center;
 }
 
 h2 {
-    font-size: 28px; /* Zvětšili jsme velikost písma */
+    font-size: 28px;
     color: #333;
     margin-bottom: 20px;
 }
@@ -26,23 +26,23 @@ h2 {
 input[type="text"],
 input[type="password"] {
     width: 100%;
-    padding: 15px; /* Větší padding uvnitř polí */
-    margin: 15px 0; /* Větší mezera mezi poli */
-    font-size: 18px; /* Zvětšili jsme velikost písma */
+    padding: 15px;
+    margin: 15px 0;
+    font-size: 18px;
     border: 1px solid #ddd;
-    border-radius: 8px; /* Větší zaoblení pro vstupní pole */
+    border-radius: 8px;
     box-sizing: border-box;
 }
 
 button {
     width: 100%;
-    padding: 15px; /* Větší tlačítko */
+    padding: 15px;
     background-color: #4CAF50;
     border: none;
     color: white;
-    border-radius: 8px; /* Větší zaoblení tlačítka */
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 18px; /* Zvětšili jsme velikost písma */
+    font-size: 18px;
 }
 
 button:hover {
@@ -50,8 +50,8 @@ button:hover {
 }
 
 .link {
-    margin-top: 20px; /* Větší mezera nad odkazem */
-    font-size: 16px; /* Mírně větší písmo pro odkaz */
+    margin-top: 20px;
+    font-size: 16px; 
 }
 
 .link a {
@@ -61,4 +61,57 @@ button:hover {
 
 .link a:hover {
     text-decoration: underline;
+}
+
+/* Navbar Styling */
+.navbar {
+    width: 100%;
+    height: 80px; /* Set height */
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px; /* Side padding */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 0;
+}
+
+
+
+.navbar a {
+    color: #000;
+    text-decoration: none;
+    padding: 0 10px;
+    font-size: 18px; /* Larger font for visibility */
+}
+
+/* Hover Effect */
+.navbar a:hover {
+    color: #4CAF50;
+}
+
+/* Separator Lines */
+.navbar-right a:not(:last-child)::after {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 20px;
+    background-color: #4CAF50;
+    position: absolute;
+    right: -10px;
+    top: 5px;
+}
+
+.login-link {
+    color: #4CAF50;
+}
+
+/* Styling the Search Bar */
+.search-bar {
+    padding: 10px;
+    font-size: 18px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 300px; /* Adjust width to fit */
 }
