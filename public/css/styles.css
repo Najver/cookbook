@@ -7,7 +7,17 @@ body {
     background-color: #f5f5f5;
 }
 
-.container {
+header {
+    width: 100%;
+    background-color: #ffffff;
+    align-items: center;
+    padding: 0; /* Side padding */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px; /* Mezera pod navigací */
+}
+
+
+.logContainer {
     align-self: center;
     width: 400px;
     padding: 30px;
@@ -49,6 +59,13 @@ button:hover {
     background-color: #45a049;
 }
 
+.error-message {
+    color: red;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+
 .link {
     margin-top: 20px;
     font-size: 16px; 
@@ -71,7 +88,7 @@ button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px; /* Side padding */
+    padding: 0; /* Side padding */
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     margin: 0;
 }
@@ -114,4 +131,52 @@ button:hover {
     border-radius: 4px;
     width: 100%;
     max-width: 300px; /* Adjust width to fit */
+}
+
+.error-message {
+color: red;
+font-weight: bold;
+margin-bottom: 10px;
+}
+
+/* Styling pro hlavičku profilu */
+.profile-header {
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #ffffff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.back-link {
+    font-size: 18px;
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.username {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+}
+
+.logout-link {
+    font-size: 16px;
+    color: #4CAF50;
+    text-decoration: none;
+    margin-top: 5px;
+}
+
+.logout-link:hover {
+    text-decoration: underline;
 }

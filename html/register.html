@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrace</title>
     <link rel="stylesheet" href="/css/styles.css">
-
 </head>
 <body>
-    <div class="container">
+    <div class="logContainer">
         <h2>Registrace</h2>
-        <form action="/register" method="post">
+        
+        <!-- Error message placeholder -->
+        <div id="error-message" class="error-message" style="display: none;"></div>
+        
+        <form id="register-form" action="/register" method="post">
             <input type="text" name="username" placeholder="Uživatelské jméno" required>
             <input type="password" name="password" placeholder="Heslo" required>
             <button type="submit">Zaregistrovat se</button>
@@ -19,5 +22,8 @@
             Už máte účet? <a href="login">Přihlásit se</a>
         </div>
     </div>
+    
+    <!-- Link to external JavaScript -->
+    <script src="/scripts/register.js"></script>
 </body>
 </html>

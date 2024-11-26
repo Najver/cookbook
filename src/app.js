@@ -2,42 +2,28 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const mysql = require('mysql2');
-const bcrypt = require('bcrypt');
 const session = require('express-session');
+const db = require('./database'); // Importujeme databázové připojení
+const User = require('./api/user'); // Import User class
+const { defineHTML } = require('./pages');
+
 const app = express();
 const PORT = 3000;
-
-// Nastavení připojení k databázi
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-});
-
-// Připojení k databázi
-db.connect(err => {
-  if (err) {
-    console.error('Chyba při připojování k databázi:', err);
-    return;
-  }
-  console.log('Připojeno k databázi');
-});
+const user = new User(db); // Vytvoření instance třídy User
 
 // Middleware pro parsování JSON a URL-encoded dat
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Nastavení express-session pro správu relací
+// Nastavení express-session
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // nastavte na true, pokud používáte HTTPS
+  cookie: { secure: false }
 }));
 
-// Middleware pro kontrolu, zda je uživatel přihlášen
+// Middleware pro kontrolu přihlášení
 function checkAuthentication(req, res, next) {
   if (req.session.userId) {
     return next();
@@ -46,91 +32,89 @@ function checkAuthentication(req, res, next) {
   }
 }
 
-// Servírujeme statické soubory ze složky `public`
+// Definování HTML stránek
+defineHTML(app, checkAuthentication);
+
+// Servírujeme statické soubory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Nastavíme cestu k HTML stránkám ve složce `html`
-app.get('/', checkAuthentication, (req, res) => {
-    res.sendFile(path.join(__dirname, '../html/index.html'));
-});
-
-app.get('/home', checkAuthentication, (req, res) => {
-    res.sendFile(path.join(__dirname, '../html/index.html'));
-});
-
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, '../html/login.html'));
-});
-
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, '../html/register.html'));
-});
-
-// Endpoint pro zpracování přihlášení
+// Endpoint pro přihlášení
 app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-  
-    db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
-      if (err) {
-        console.error('Chyba při získávání uživatele:', err);
-        return res.status(500).send('Chyba serveru');
-      }
-  
-      if (results.length === 0) {
-        return res.status(400).send('Uživatel neexistuje');
-      }
-  
-      const user = results[0];
-      const match = await bcrypt.compare(password, user.password);
-      if (!match) {
-        return res.status(400).send('Nesprávné heslo');
-      }
-      if (match){
-        req.session.userId = user.id;
-        res.redirect('/home');
-      }
-      
-    });
-  });
+  const { username, password } = req.body;
 
-// Endpoint pro registraci uživatele
-app.post('/register', async (req, res) => {
-    const { username, password, role_id } = req.body;
-  
-    const hashedPassword = await bcrypt.hash(password, 10);
-  
-    db.query('INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)', [username, hashedPassword, 2], (err, result) => {
-      if (err) {
-        console.error('Chyba při registraci uživatele:', err);
-        return res.status(500).send('Chyba serveru');
-      }
-      res.redirect('/login');
-    });
+  user.login(username, password, req.session, (err, message) => {
+    if (err) {
+      return res.status(500).send('Chyba serveru');
+    }
+    if (message) {
+      // Redirect with error message as a query parameter
+      return res.redirect(`/login?error=${encodeURIComponent(message)}`);
+    }
+    res.redirect('/home');
   });
-  
+});
+
+// Registration endpoint
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+
+  user.register(username, password, (err, result) => {
+    if (err) {
+      return res.status(500).redirect('/register?error=Chyba%20serveru');
+    }
+
+    if (result === 'Uživatelské jméno již existuje') {
+      return res.status(400).redirect('/register?error=Uživatelské%20jméno%20již%20existuje');
+    }
+
+    res.redirect('/login');
+  });
+});
+
 // Endpoint pro odhlášení
 app.get('/logout', (req, res) => {
-    req.session.destroy(err => {
-      if (err) {
-        return res.status(500).send('Chyba při odhlašování');
-      }
-      res.redirect('/login');
-    });
+  user.logout(req.session, (err) => {
+    if (err) {
+      return res.status(500).send('Chyba při odhlašování');
+    }
+    res.redirect('/login');
   });
+});
 
-// Přidáme API endpoint pro získání dat z databáze (pouze pro přihlášené uživatele)
-app.get('/api/get-data', checkAuthentication, (req, res) => {
-    db.query('SELECT * FROM users', (err, result) => {
-        if (err) {
-            console.error('Chyba při získávání dat:', err);
-            res.status(500).send('Chyba serveru');
-            return;
-        }
-        res.json(result);
-    });
+// Endpoint pro API
+app.get('/api/users', checkAuthentication, (req, res) => {
+  db.query('SELECT * FROM users', (err, result) => {
+    if (err) {
+      console.error('Chyba při získávání dat:', err);
+      res.status(500).send('Chyba serveru');
+      return;
+    }
+    res.json(result);
+  });
+});
+
+// Profilový endpoint
+app.get('/api/profile', checkAuthentication, (req, res) => {
+  const userId = req.session.userId; // Získání ID uživatele ze session
+  if (!userId) {
+    return res.status(401).send('Nejste přihlášený.');
+  }
+
+  db.query('SELECT username FROM users WHERE id = ?', [userId], (err, result) => {
+    if (err) {
+      console.error('Chyba při získávání profilových informací:', err);
+      return res.status(500).send('Chyba serveru');
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send('Uživatel nenalezen');
+    }
+
+    res.json({ username: result[0].username });
+  });
 });
 
 // Spuštění serveru
 app.listen(PORT, () => {
-    console.log(`Server běží na http://localhost:${PORT}`);
+  console.log(`Server běží na http://localhost:${PORT}`);
 });
