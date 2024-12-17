@@ -9,7 +9,7 @@ const User = require('./api/user'); // Import User class
 const { defineHTML } = require('./pages');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT;
 const user = new User(db); // Vytvoření instance třídy User
 
 // Middleware pro parsování JSON a URL-encoded dat
