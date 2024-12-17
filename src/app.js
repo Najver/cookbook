@@ -137,13 +137,12 @@ app.post('/api/recipes', checkAuthentication, upload.single('image'), (req, res)
   }
 
   const insertRecipeQuery = `
-  INSERT INTO recipes (title, ingredients, instructions, rating, created_by, image_path)
-  VALUES (?, ?, ?, ?, ?, ?)
-`;
-const rating = 100;  // Explicitly set rating to 0
+  INSERT INTO recipes (title, ingredients, instructions, created_by, image_path)
+  VALUES (?, ?, ?, ?, ?)`;
+  
 db.query(
   insertRecipeQuery,
-  [title, ingredients, instructions, rating, userId, imagePath],
+  [title, ingredients, instructions, userId, imagePath],
   (err, result) => {
     if (err) {
       console.error('Chyba při ukládání receptu:', err);
