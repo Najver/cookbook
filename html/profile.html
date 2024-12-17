@@ -15,6 +15,33 @@
         </div>
     </header>
 
+    <main>
+        <button id="add-recipe-button" class="add-recipe-btn">Přidej recept</button>
+    </main>
+
+    <!-- Modal for adding recipe -->
+    <div id="recipe-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span id="close-modal" class="close">&times;</span>
+            <h2>Přidej nový recept</h2>
+            <form id="add-recipe-form" enctype="multipart/form-data">
+                <label for="title">Název receptu:</label>
+                <input type="text" id="title" name="title" required>
+                
+                <label for="ingredients">Ingredience:</label>
+                <textarea id="ingredients" name="ingredients" placeholder="Oddělujte čárkou, např.: 3 vajíčka, 500 ml mléka, ..." required></textarea>
+                
+                <label for="instructions">Postup:</label>
+                <textarea id="instructions" name="instructions" required></textarea>
+                
+                <label for="image">Obrázek receptu:</label>
+                <input type="file" id="image" name="image" accept="image/*">
+                
+                <button type="submit">Přidat recept</button>
+            </form>
+        </div>
+    </div>
+
     <script src="/scripts/profile.js"></script>
 </body>
 </html>

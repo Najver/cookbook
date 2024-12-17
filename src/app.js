@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const multer = require('multer');
 const db = require('./database'); // Importujeme databázové připojení
 const User = require('./api/user'); // Import User class
 const { defineHTML } = require('./pages');
@@ -14,6 +15,17 @@ const user = new User(db); // Vytvoření instance třídy User
 // Middleware pro parsování JSON a URL-encoded dat
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: path.join(__dirname, '../public/images'),
+  filename: (req, file, cb) => {
+      const userId = req.session.userId;
+      const ext = path.extname(file.originalname);
+      cb(null, `${userId}_${Date.now()}${ext}`);
+  },
+});
+const upload = multer({ storage });
 
 // Nastavení express-session
 app.use(session({
@@ -112,6 +124,34 @@ app.get('/api/profile', checkAuthentication, (req, res) => {
 
     res.json({ username: result[0].username });
   });
+});
+
+// Endpoint for adding a recipe
+app.post('/api/recipes', checkAuthentication, upload.single('image'), (req, res) => {
+  const { title, ingredients, instructions } = req.body;
+  const userId = req.session.userId;
+  const imagePath = req.file ? `/images/${req.file.filename}` : null;
+
+  if (!title || !ingredients || !instructions) {
+      return res.status(400).send('Všechna pole jsou povinná.');
+  }
+
+  const insertRecipeQuery = `
+  INSERT INTO recipes (title, ingredients, instructions, rating, created_by, image_path)
+  VALUES (?, ?, ?, ?, ?, ?)
+`;
+const rating = 100;  // Explicitly set rating to 0
+db.query(
+  insertRecipeQuery,
+  [title, ingredients, instructions, rating, userId, imagePath],
+  (err, result) => {
+    if (err) {
+      console.error('Chyba při ukládání receptu:', err);
+      return res.status(500).send('Chyba při ukládání receptu');
+    }
+    res.status(200).send('Recept byl úspěšně uložen!');
+  }
+);
 });
 
 // Spuštění serveru
