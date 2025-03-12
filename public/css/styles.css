@@ -1,4 +1,4 @@
-body {
+.centerBody {
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
@@ -8,14 +8,14 @@ body {
 }
 
 header {
-    width: 100%;
-    background-color: #ffffff;
-    align-items: center;
-    padding: 0; /* Side padding */
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px; /* Mezera pod navigací */
+    font-family: Arial, sans-serif;
+    position: sticky; /* Nebo fixed */
+    top: 0;
+    background: white;
+    z-index: 1000;
+    padding: 10px;
+    margin-bottom: 20px; /* Přidá mezeru mezi headerem a recepty */
 }
-
 
 .logContainer {
     align-self: center;
@@ -35,16 +35,14 @@ h2 {
 
 input[type="text"],
 input[type="password"] {
-    width: 100%;
-    padding: 15px;
-    margin: 15px 0;
-    font-size: 18px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-sizing: border-box;
+    width: calc(100% - 30px); /* Zajistí, že se vejde do rodiče */
+    padding: 10px;
+    margin: 10px auto; /* Přidá mezery */
+    display: block;
 }
 
 button {
+    font-family: Arial, sans-serif;
     width: 100%;
     padding: 15px;
     background-color: #4CAF50;
@@ -64,7 +62,6 @@ button:hover {
     font-size: 14px;
     margin-top: 10px;
 }
-
 
 .link {
     margin-top: 20px;
@@ -92,8 +89,6 @@ button:hover {
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     margin: 0;
 }
-
-
 
 .navbar a {
     color: #000;
@@ -123,20 +118,40 @@ button:hover {
     color: #4CAF50;
 }
 
-/* Styling the Search Bar */
-.search-bar {
+/* Styling the Search Bar a tlačítko */
+.navbar-left {
+    display: flex;
+    align-items: center;
+}
+
+/* Tlačítko s ikonou lupy - zmenšené a umístěné nalevo */
+.search-btn {
+    font-size: 14px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin-right: 5px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+/* Přizpůsobení vyhledávacího pole, aby bylo vedle tlačítka */
+.navbar-left .search-bar {
     padding: 10px;
     font-size: 18px;
     border: 1px solid #ddd;
     border-radius: 4px;
     width: 100%;
-    max-width: 300px; /* Adjust width to fit */
+    max-width: 300px;
+    display: inline-block; /* Pro inline zobrazení vedle tlačítka */
+    margin: 0; /* Odstraněno centrování */
 }
 
 .error-message {
-color: red;
-font-weight: bold;
-margin-bottom: 10px;
+    color: red;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
 /* Styling pro hlavičku profilu */
@@ -182,6 +197,7 @@ margin-bottom: 10px;
 }
 
 .modal {
+    font-family: Arial, sans-serif;
     position: fixed;
     z-index: 10;
     left: 0;
@@ -202,6 +218,31 @@ margin-bottom: 10px;
     border-radius: 10px;
 }
 
+#add-recipe-form .form-group {
+    margin-bottom: 15px;
+}
+
+#add-recipe-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#add-recipe-form input[type="text"],
+#add-recipe-form textarea,
+#add-recipe-form input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+/* Checkboxy – každý tag bude na samostatném řádku */
+#tags-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: normal;
+}
+
 .close {
     color: #aaa;
     float: right;
@@ -216,3 +257,117 @@ margin-bottom: 10px;
     text-decoration: none;
     cursor: pointer;
 }
+
+/* Kontejner pro recepty – vytvoří mřížku */
+#recipes-container {
+    font-family: Arial, sans-serif;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responzivní mřížka */
+    gap: 20px; /* Mezera mezi recepty */
+    padding: 20px;
+    max-width: 1200px; /* Maximální šířka */
+    margin: 0 auto; /* Zarovnání na střed */
+    margin-top: 20px; /* Přidá mezeru pod header */
+}
+
+#my-recipes-container {
+    font-family: Arial, sans-serif;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responzivní mřížka */
+    gap: 20px; /* Mezera mezi recepty */
+    padding: 20px;
+    max-width: 1200px; /* Maximální šířka */
+    margin: 0 auto; /* Zarovnání na střed */
+    margin-top: 20px; /* Přidá mezeru pod header */
+}
+/* Styly pro jednotlivé recepty */
+/* Receptová karta */
+.recipe {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    /* Fixní velikost karty, pokud je to potřeba */
+    width: 320px;
+    height: 400px;
+    overflow: hidden;
+  }
+  
+  /* Obrázek v receptu s fixními rozměry */
+  .recipe img {
+    width: 300px;    /* fixní šířka */
+    height: 200px;   /* fixní výška */
+    object-fit: cover; /* zajistí oříznutí přebytečných částí obrázku */
+    border-radius: 5px;
+    display: block;
+    margin: 0 auto; /* vycentrování obrázku */
+  }
+  
+  .recipe-detail .recipe-image {
+    width: 600px;
+    height: 400px;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto;
+  }
+  
+
+.delete-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    font-size: 18px;
+    line-height: 20px;
+    cursor: pointer;
+    outline: none;
+}
+
+.delete-button:hover {
+    background: darkred;
+}
+
+/* Kontejner pro hvězdy – nyní má velikost přesně podle obsahu */
+#star-rating {
+    display: inline-block;
+    line-height: 1; /* minimalizuje vertikální mezery */
+    margin: 0;
+    padding: 0;
+  }
+
+  
+/* Styly pro widget hodnocení */
+#star-rating .star {
+    font-size: 30px;
+    color: #ccc;
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+  }
+  
+  #star-rating .star.full {
+    color: gold;
+  }
+  
+  #star-rating .star.half {
+    color: #ccc;
+  }
+  
+  #star-rating .star.half::before {
+    content: '\2605';
+    position: absolute;
+    left: 0;
+    width: 50%;
+    overflow: hidden;
+    color: gold;
+  }
+  
