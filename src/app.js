@@ -197,71 +197,165 @@ app.get('/api/recipes', (req, res) => {
 
 app.get('/recipe/:id', checkAuthentication, (req, res) => {
   const recipeId = req.params.id;
-  db.query('SELECT * FROM recipes WHERE id = ?', [recipeId], (err, results) => {
-    if (err) {
-      console.error('Chyba při načítání receptu:', err);
-      return res.status(500).send('Chyba serveru');
-    }
-    if (results.length === 0) {
-      return res.status(404).send('Recept nenalezen');
-    }
-    const recipe = results[0];
-    // Převod průměrného ratingu z procent na počet hvězdiček (5 hvězd = 100%)
-    const averageRating = recipe.rating / 20;
 
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="cs">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${recipe.title}</title>
-          <link rel="stylesheet" href="/css/styles.css">
-      </head>
-      <body>
-          <header>
-              <nav class="navbar">
-                  <div class="navbar-left">
-                      <a href="/home">Domů</a>
-                  </div>
-                  <div class="navbar-right">
-                      <a href="/favorites">Oblíbené</a>
-                      <a href="/profile">Profil</a>
-                      <a href="/logout" class="login-link">Odhlášení</a>
-                  </div>
-              </nav>
-          </header>
-          <main>
-              <h1>${recipe.title}</h1>
-              <div class="recipe-detail">
-              ${recipe.image_path ? `<img src="${recipe.image_path}" alt="${recipe.title}" class="recipe-image">` : ''}
-              <!-- další obsah detailu receptu -->
-              </div>
-              <p><strong>Ingredience:</strong> ${recipe.ingredients}</p>
-              <p><strong>Postup:</strong> ${recipe.instructions}</p>
-              
-              <!-- Widget pro hodnocení -->
-              <div id="rating-widget" 
-                   data-recipe-id="${recipe.id}" 
-                   data-initial-rating="${averageRating}" 
-                   data-rated-count="${recipe.rated_count}">
-                <h3>Hodnocení:</h3>
-                <div id="star-rating">
-                  <span class="star" data-value="1">&#9734;</span>
-                  <span class="star" data-value="2">&#9734;</span>
-                  <span class="star" data-value="3">&#9734;</span>
-                  <span class="star" data-value="4">&#9734;</span>
-                  <span class="star" data-value="5">&#9734;</span>
-                </div>
-                <p id="user-rating-info"></p>
-              </div>
-          </main>
-          <script src="/scripts/rating.js"></script>
-      </body>
-      </html>
-    `);
-  });
+  // Načteme recept a jeho komentáře
+  db.query(
+    'SELECT * FROM recipes WHERE id = ?',
+    [recipeId],
+    (err, recipeResults) => {
+      if (err) {
+        console.error('Chyba při načítání receptu:', err);
+        return res.status(500).send('Chyba serveru');
+      }
+      if (recipeResults.length === 0) {
+        return res.status(404).send('Recept nenalezen');
+      }
+
+      const recipe = recipeResults[0];
+      const averageRating = recipe.rating / 20;
+
+      // Načteme komentáře pro daný recept
+      db.query(
+        'SELECT comments.content, comments.created_at, users.username FROM comments JOIN users ON comments.user_id = users.id WHERE comments.recipe_id = ? ORDER BY comments.created_at DESC',
+        [recipeId],
+        (err, comments) => {
+          if (err) {
+            console.error('Chyba při načítání komentářů:', err);
+            return res.status(500).send('Chyba serveru');
+          }
+
+          res.send(`
+            <!DOCTYPE html>
+            <html lang="cs">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${recipe.title}</title>
+                <link rel="stylesheet" href="/css/styles.css">
+            </head>
+            <body>
+                <header>
+                    <nav class="navbar">
+                        <div class="navbar-left">
+                            <a href="/home">Domů</a>
+                        </div>
+                        <div class="navbar-right">
+                            <a href="/favorites">Oblíbené</a>
+                            <a href="/profile">Profil</a>
+                            <a href="/logout" class="login-link">Odhlášení</a>
+                        </div>
+                    </nav>
+                </header>
+                <main>
+                    <h1>${recipe.title}</h1>
+                    <div class="recipe-detail">
+                    ${recipe.image_path ? `<img src="${recipe.image_path}" alt="${recipe.title}" class="recipe-image">` : ''}
+                    </div>
+                    <p><strong>Ingredience:</strong> ${recipe.ingredients}</p>
+                    <p><strong>Postup:</strong> ${recipe.instructions}</p>
+
+                    <!-- Widget pro hodnocení -->
+                    <div id="rating-widget" 
+                        data-recipe-id="${recipe.id}" 
+                        data-initial-rating="${averageRating}" 
+                        data-rated-count="${recipe.rated_count}">
+                        <h3>Hodnocení:</h3>
+                        <div id="star-rating">
+                        <span class="star" data-value="1">&#9734;</span>
+                        <span class="star" data-value="2">&#9734;</span>
+                        <span class="star" data-value="3">&#9734;</span>
+                        <span class="star" data-value="4">&#9734;</span>
+                        <span class="star" data-value="5">&#9734;</span>
+                        </div>
+                        <p id="user-rating-info"></p>
+                    </div>
+
+                    <!-- Sekce komentářů -->
+                    <h3>Komentáře</h3>
+                    <div id="comments-section">
+                        <div id="comments-list"></div>
+                        <textarea id="comment-input" placeholder="Napište svůj komentář..." rows="3"></textarea>
+                        <button id="submit-comment">Odeslat</button>
+                    </div>
+                </main>
+
+                <script src="/scripts/rating.js"></script>
+                <script src="/scripts/comments.js"></script>
+            </body>
+            </html>
+          `);
+        }
+      );
+    }
+  );
 });
+
+app.get('/api/recipes/:id/comments', (req, res) => {
+  const recipeId = req.params.id;
+
+  db.query(
+      `SELECT comments.id, comments.content, comments.created_at, users.username 
+       FROM comments 
+       JOIN users ON comments.user_id = users.id 
+       WHERE comments.recipe_id = ? 
+       ORDER BY comments.created_at ASC`,
+      [recipeId],
+      (err, results) => {
+          if (err) {
+              console.error('Error fetching comments:', err);
+              return res.status(500).send('Server error');
+          }
+          res.json(results);
+      }
+  );
+});
+
+
+//endpoint na pridani receptu
+app.post('/api/recipes/:id/comments', checkAuthentication, (req, res) => {
+  const recipeId = req.params.id;
+  const userId = req.session.userId;
+  const { content } = req.body;
+
+  if (!content.trim()) {
+      return res.status(400).send('Comment cannot be empty');
+  }
+
+  db.query(
+      'INSERT INTO comments (user_id, recipe_id, content) VALUES (?, ?, ?)',
+      [userId, recipeId, content],
+      (err, result) => {
+          if (err) {
+              console.error('Error inserting comment:', err);
+              return res.status(500).send('Server error');
+          }
+          res.status(201).json({ id: result.insertId, content, username: req.session.username });
+      }
+  );
+});
+
+
+//endpoint na mazani komentaru
+app.delete('/api/comments/:id', checkAuthentication, (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.session.userId;
+
+  db.query(
+      'DELETE FROM comments WHERE id = ? AND user_id = ?',
+      [commentId, userId],
+      (err, result) => {
+          if (err) {
+              console.error('Error deleting comment:', err);
+              return res.status(500).send('Server error');
+          }
+          if (result.affectedRows === 0) {
+              return res.status(403).send('You can only delete your own comments');
+          }
+          res.status(200).send('Comment deleted successfully');
+      }
+  );
+});
+
 
 
 // Endpoint pro načtení receptů přihlášeného uživatele
@@ -330,29 +424,42 @@ app.delete('/api/recipes/:id', checkAuthentication, (req, res) => {
 });
 
 app.get('/api/recipes/search', (req, res) => {
-  const searchTerm = req.query.q;
-  if (!searchTerm) {
-    return res.status(400).send('Vyhledávací výraz je povinný.');
+  const searchTerm = req.query.q || '';
+  const tags = req.query.tags ? req.query.tags.split(',') : [];
+
+  let query = `
+      SELECT DISTINCT r.id, r.title, r.ingredients, r.instructions, r.image_path
+      FROM recipes r
+      LEFT JOIN recipe_tags rt ON r.id = rt.recipe_id
+  `;
+  let queryParams = [];
+
+  // Podmínky pro filtrování
+  let conditions = [];
+
+  if (searchTerm) {
+      conditions.push("LOWER(r.title) LIKE ?");
+      queryParams.push(`%${searchTerm.toLowerCase()}%`);
   }
 
-  // Převod vstupu na malá písmena
-  const searchTermLower = searchTerm.toLowerCase();
+  if (tags.length > 0) {
+      conditions.push(`rt.tag_id IN (${tags.map(() => '?').join(',')})`);
+      queryParams.push(...tags);
+  }
 
-  const query = `
-    SELECT id, title, ingredients, instructions, image_path
-    FROM recipes
-    WHERE LOWER(title) LIKE ?
-  `;
-  const likeQuery = `%${searchTermLower}%`;
+  if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
+  }
 
-  db.query(query, [likeQuery], (err, results) => {
-    if (err) {
-      console.error('Chyba při vyhledávání receptů:', err);
-      return res.status(500).send('Chyba serveru');
-    }
-    res.json(results);
+  db.query(query, queryParams, (err, results) => {
+      if (err) {
+          console.error('Chyba při vyhledávání receptů:', err);
+          return res.status(500).send('Chyba serveru');
+      }
+      res.json(results);
   });
 });
+
 
 // Endpoint pro uložení hodnocení receptu
 app.post('/api/recipes/:id/rate', checkAuthentication, (req, res) => {

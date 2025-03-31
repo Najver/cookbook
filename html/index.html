@@ -13,13 +13,19 @@
                 <input type="text" class="search-bar" placeholder="Vyhledat recept...">
                 <!-- Tlačítko s ikonou lupy -->
                 <button class="search-btn">&#128269;</button>
+                <div class="filter-container">
+                    <button id="toggle-tags" class="dropdown-btn">Vybrat kategorie &#9662;</button>
+                    <div id="tag-filter" class="dropdown-content hidden">
+                        <div id="tag-checkboxes"></div>
+                    </div>
+                </div>
             </div>
             <div class="navbar-right">
-                <a href="/favorites">Oblíbené</a>
-                <a href="/profile">Profil</a>
-                <a href="/logout" class="login-link">Odhlášení</a>
+                <a class="menu-link" href="/favorites">Oblíbené</a>
+                <a class="menu-link" href="/profile">Profil</a>
+                <a class="menu-link" href="/logout" class="login-link">Odhlášení</a>
             </div>
-        </nav>
+        </nav>                 
     </header>
 
     <main>
