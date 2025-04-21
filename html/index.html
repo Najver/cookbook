@@ -11,7 +11,6 @@
         <nav class="navbar">
             <div class="navbar-left">
                 <input type="text" class="search-bar" placeholder="Vyhledat recept...">
-                <!-- Tlačítko s ikonou lupy -->
                 <button class="search-btn">&#128269;</button>
                 <div class="filter-container">
                     <button id="toggle-tags" class="dropdown-btn">Vybrat kategorie &#9662;</button>
@@ -29,8 +28,18 @@
     </header>
 
     <main>
-        <h1>Kuchyně</h1>
+        <div class="filter-container">
+            <label for="sort-select">Řazení:</label>
+            <select id="sort-select">
+                <option value="created_at_desc" selected>Nejnovější</option>
+                <option value="rating_desc">Nejlépe hodnocené</option>
+                <option value="title_asc">Abecedně (A–Z)</option>
+            </select>
+        </div>
         <div id="recipes-container"></div>
+        <div class="load-more-container">
+            <button id="load-more-btn" type="button">Načíst další recepty</button>
+        </div>
     </main>
     
     <script src="/scripts/index.js"></script>

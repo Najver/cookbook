@@ -69,20 +69,25 @@ app.post('/login', (req, res) => {
 
 // Registration endpoint
 app.post('/register', (req, res) => {
-  const { username, password } = req.body;
+    const { username, password } = req.body;
 
-  user.register(username, password, (err, result) => {
-    if (err) {
-      return res.status(500).redirect('/register?error=Chyba%20serveru');
-    }
+    user.register(username, password, (err, result) => {
+        if (err) {
+            return res.status(500).redirect('/register?error=Chyba%20serveru');
+        }
 
-    if (result === 'Uživatelské jméno již existuje') {
-      return res.status(400).redirect('/register?error=Uživatelské%20jméno%20již%20existuje');
-    }
+        if (result === 'Uživatelské jméno již existuje') {
+            return res.status(400).redirect('/register?error=Uživatelské%20jméno%20již%20existuje');
+        }
 
-    res.redirect('/login');
-  });
+        if (result === 'Uživatelské jméno obsahuje nevhodné výrazy') {
+            return res.status(400).redirect('/register?error=Uživatelské%20jméno%20obsahuje%20nevhodné%20výrazy');
+        }
+
+        res.redirect('/login');
+    });
 });
+
 
 // Endpoint pro odhlášení
 app.get('/logout', (req, res) => {
@@ -186,13 +191,28 @@ app.get('/api/tags', (req, res) => {
 
 //endpoint na ziskani receptu
 app.get('/api/recipes', (req, res) => {
-  db.query('SELECT id, title, ingredients, instructions, image_path FROM recipes', (err, results) => {
-      if (err) {
-          console.error('Chyba při načítání receptů:', err);
-          return res.status(500).send('Chyba serveru');
-      }
-      res.json(results);
-  });
+    const limit = parseInt(req.query.limit) || 12;
+    const offset = parseInt(req.query.offset) || 0;
+    const sort = req.query.sort || 'created_at_desc';
+
+    let orderBy = 'created_at DESC';
+    if (sort === 'rating_desc') orderBy = 'rating DESC';
+    if (sort === 'title_asc') orderBy = 'title ASC';
+
+    const query = `
+    SELECT id, title, ingredients, instructions, image_path
+    FROM recipes
+    ORDER BY ${orderBy}
+    LIMIT ? OFFSET ?
+  `;
+
+    db.query(query, [limit, offset], (err, results) => {
+        if (err) {
+            console.error('Chyba při načítání receptů:', err);
+            return res.status(500).send('Chyba serveru');
+        }
+        res.json(results);
+    });
 });
 
 app.get('/recipe/:id', checkAuthentication, (req, res) => {
@@ -247,13 +267,15 @@ app.get('/recipe/:id', checkAuthentication, (req, res) => {
                     </nav>
                 </header>
                 <main>
+                  <div class="recipe-content">
                     <h1>${recipe.title}</h1>
                     <div class="recipe-detail">
-                    ${recipe.image_path ? `<img src="${recipe.image_path}" alt="${recipe.title}" class="recipe-image">` : ''}
+                      ${recipe.image_path ? `<img src="${recipe.image_path}" alt="${recipe.title}" class="recipe-image">` : ''}
                     </div>
+                    <button id="favorite-btn">❤️ Přidat do oblíbených</button>
                     <p><strong>Ingredience:</strong> ${recipe.ingredients}</p>
                     <p><strong>Postup:</strong> ${recipe.instructions}</p>
-
+                
                     <!-- Widget pro hodnocení -->
                     <div id="rating-widget" 
                         data-recipe-id="${recipe.id}" 
@@ -269,18 +291,20 @@ app.get('/recipe/:id', checkAuthentication, (req, res) => {
                         </div>
                         <p id="user-rating-info"></p>
                     </div>
-
-                    <!-- Sekce komentářů -->
-                    <h3>Komentáře</h3>
-                    <div id="comments-section">
-                        <div id="comments-list"></div>
-                        <textarea id="comment-input" placeholder="Napište svůj komentář..." rows="3"></textarea>
-                        <button id="submit-comment">Odeslat</button>
+                  </div>
+                  
+                  <h3>Komentáře</h3>
+                  <div id="comments-section">
+                    <div id="comments-list"></div>
+                    <div class="comment-form">
+                      <textarea id="comment-input" placeholder="Napište svůj komentář..." rows="3"></textarea>
+                      <button id="submit-comment">Odeslat</button>
                     </div>
+                  </div>
                 </main>
-
                 <script src="/scripts/rating.js"></script>
                 <script src="/scripts/comments.js"></script>
+                <script src="/scripts/favorite.js"></script>
             </body>
             </html>
           `);
@@ -356,8 +380,6 @@ app.delete('/api/comments/:id', checkAuthentication, (req, res) => {
   );
 });
 
-
-
 // Endpoint pro načtení receptů přihlášeného uživatele
 app.get('/api/myrecipes', checkAuthentication, (req, res) => {
   const userId = req.session.userId; // Získáme ID aktuálně přihlášeného uživatele ze session
@@ -374,90 +396,124 @@ app.get('/api/myrecipes', checkAuthentication, (req, res) => {
 
 // Endpoint pro smazání receptu
 app.delete('/api/recipes/:id', checkAuthentication, (req, res) => {
-  const recipeId = req.params.id;
-  const userId = req.session.userId;
+    const recipeId = req.params.id;
+    const userId = req.session.userId;
 
-  // Nejprve získáme informaci o obrázku daného receptu
-  const selectQuery = 'SELECT image_path FROM recipes WHERE id = ? AND created_by = ?';
-  db.query(selectQuery, [recipeId, userId], (err, results) => {
-    if (err) {
-      console.error('Chyba při načítání receptu:', err);
-      return res.status(500).send('Chyba serveru');
-    }
-    if (results.length === 0) {
-      return res.status(404).send('Recept nenalezen nebo nemáte oprávnění');
-    }
-    const imagePath = results[0].image_path;
-
-    // Nejprve smažeme tagy patřící k danému receptu
-    const deleteTagsQuery = 'DELETE FROM recipe_tags WHERE recipe_id = ?';
-    db.query(deleteTagsQuery, [recipeId], (err, resultTags) => {
-      if (err) {
-        console.error('Chyba při mazání tagů:', err);
-        return res.status(500).send('Chyba při mazání tagů');
-      }
-
-      // Poté smažeme samotný recept
-      const deleteQuery = 'DELETE FROM recipes WHERE id = ? AND created_by = ?';
-      db.query(deleteQuery, [recipeId, userId], (err, result) => {
+    // Načteme recept kvůli image_path
+    const selectQuery = 'SELECT image_path FROM recipes WHERE id = ? AND created_by = ?';
+    db.query(selectQuery, [recipeId, userId], (err, results) => {
         if (err) {
-          console.error('Chyba při mazání receptu:', err);
-          return res.status(500).send('Chyba při mazání receptu');
+            console.error('Chyba při načítání receptu:', err);
+            return res.status(500).send('Chyba serveru');
         }
-        
-        // Pokud byl připojen obrázek, smažeme soubor ze složky
-        if (imagePath) {
-          const filePath = path.join(__dirname, '../public', imagePath);
-          fs.unlink(filePath, (err) => {
+
+        if (results.length === 0) {
+            return res.status(404).send('Recept nenalezen nebo nemáte oprávnění');
+        }
+
+        // Uložíme imagePath do proměnné vyššího rozsahu
+        const imagePath = results[0].image_path;
+
+        // Smazání komentářů
+        db.query('DELETE FROM comments WHERE recipe_id = ?', [recipeId], (err) => {
             if (err) {
-              console.error('Chyba při mazání obrázku:', err);
-              // I když dojde k chybě při mazání obrázku, vrátíme úspěšnou odpověď, protože záznam byl smazán
+                console.error('Chyba při mazání komentářů:', err);
+                return res.status(500).send('Chyba při mazání komentářů');
             }
-            return res.status(200).send('Recept byl smazán');
-          });
-        } else {
-          return res.status(200).send('Recept byl smazán');
-        }
-      });
+
+            // Smazání z favorites
+            db.query('DELETE FROM favorites WHERE recipe_id = ?', [recipeId], (err) => {
+                if (err) {
+                    console.error('Chyba při mazání oblíbených:', err);
+                    return res.status(500).send('Chyba při mazání oblíbených');
+                }
+
+                // Smazání tagů
+                db.query('DELETE FROM recipe_tags WHERE recipe_id = ?', [recipeId], (err) => {
+                    if (err) {
+                        console.error('Chyba při mazání tagů:', err);
+                        return res.status(500).send('Chyba při mazání tagů');
+                    }
+
+                    // Nakonec smažeme samotný recept
+                    db.query('DELETE FROM recipes WHERE id = ? AND created_by = ?', [recipeId, userId], (err) => {
+                        if (err) {
+                            console.error('Chyba při mazání receptu:', err);
+                            return res.status(500).send('Chyba při mazání receptu');
+                        }
+
+                        // Pokud má recept obrázek, smažeme ho
+                        if (imagePath) {
+                            const filePath = path.join(__dirname, '../public', imagePath);
+                            fs.unlink(filePath, (err) => {
+                                if (err) {
+                                    console.error('Chyba při mazání obrázku:', err);
+                                    // Nevadí, i tak vrátíme úspěch
+                                }
+                                return res.status(200).send('Recept byl smazán');
+                            });
+                        } else {
+                            return res.status(200).send('Recept byl smazán');
+                        }
+                    });
+                });
+            });
+        });
     });
-  });
 });
 
+
 app.get('/api/recipes/search', (req, res) => {
-  const searchTerm = req.query.q || '';
-  const tags = req.query.tags ? req.query.tags.split(',') : [];
+    const searchTerm = req.query.q || '';
+    const tags = req.query.tags ? req.query.tags.split(',') : [];
+    const limit = parseInt(req.query.limit) || 12;
+    const offset = parseInt(req.query.offset) || 0;
+    const sort = req.query.sort || 'created_at_desc';
 
-  let query = `
-      SELECT DISTINCT r.id, r.title, r.ingredients, r.instructions, r.image_path
-      FROM recipes r
-      LEFT JOIN recipe_tags rt ON r.id = rt.recipe_id
-  `;
-  let queryParams = [];
+    let orderBy = 'r.created_at DESC';
+    if (sort === 'rating_desc') orderBy = 'r.rating DESC';
+    if (sort === 'title_asc') orderBy = 'r.title ASC';
 
-  // Podmínky pro filtrování
-  let conditions = [];
+    let query = `
+        SELECT DISTINCT r.id, r.title, r.ingredients, r.instructions, r.image_path, r.created_at, r.rating
+        FROM recipes r
+                 LEFT JOIN recipe_tags rt ON r.id = rt.recipe_id
+    `;
 
-  if (searchTerm) {
-      conditions.push("LOWER(r.title) LIKE ?");
-      queryParams.push(`%${searchTerm.toLowerCase()}%`);
-  }
+    const queryParams = [];
+    const conditions = [];
 
-  if (tags.length > 0) {
-      conditions.push(`rt.tag_id IN (${tags.map(() => '?').join(',')})`);
-      queryParams.push(...tags);
-  }
+    if (searchTerm) {
+        conditions.push("LOWER(r.title) LIKE ?");
+        queryParams.push(`%${searchTerm.toLowerCase()}%`);
+    }
 
-  if (conditions.length > 0) {
-      query += " WHERE " + conditions.join(" AND ");
-  }
+    let havingClause = '';
+    if (tags.length > 0) {
+        conditions.push(`rt.tag_id IN (${tags.map(() => '?').join(',')})`);
+        havingClause = `GROUP BY r.id HAVING COUNT(DISTINCT rt.tag_id) = ${tags.length}`;
+        queryParams.push(...tags);
+    }
 
-  db.query(query, queryParams, (err, results) => {
-      if (err) {
-          console.error('Chyba při vyhledávání receptů:', err);
-          return res.status(500).send('Chyba serveru');
-      }
-      res.json(results);
-  });
+    if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+    }
+
+    if (havingClause) {
+        query += ` ${havingClause}`;
+    }
+
+
+    query += ` ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
+    queryParams.push(limit, offset);
+
+    db.query(query, queryParams, (err, results) => {
+        if (err) {
+            console.error('Chyba při vyhledávání receptů:', err);
+            return res.status(500).send('Chyba serveru');
+        }
+        res.json(results);
+    });
 });
 
 
@@ -500,6 +556,64 @@ app.post('/api/recipes/:id/rate', checkAuthentication, (req, res) => {
   });
 });
 
+app.post('/api/favorites/:recipeId', checkAuthentication, (req, res) => {
+    const recipeId = req.params.recipeId;
+    const userId = req.session.userId;
+
+    const insertQuery = 'INSERT IGNORE INTO favorites (user_id, recipe_id) VALUES (?, ?)';
+    db.query(insertQuery, [userId, recipeId], (err, result) => {
+        if (err) {
+            console.error('Chyba při přidávání do oblíbených:', err);
+            return res.status(500).send('Chyba serveru');
+        }
+        res.status(200).send('Recept přidán do oblíbených');
+    });
+});
+
+app.delete('/api/favorites/:recipeId', checkAuthentication, (req, res) => {
+    const recipeId = req.params.recipeId;
+    const userId = req.session.userId;
+
+    const deleteQuery = 'DELETE FROM favorites WHERE user_id = ? AND recipe_id = ?';
+    db.query(deleteQuery, [userId, recipeId], (err, result) => {
+        if (err) {
+            console.error('Chyba při odebírání z oblíbených:', err);
+            return res.status(500).send('Chyba serveru');
+        }
+        res.status(200).send('Recept odebrán z oblíbených');
+    });
+});
+
+app.get('/api/favorites', checkAuthentication, (req, res) => {
+    const userId = req.session.userId;
+
+    const query = `
+    SELECT r.id, r.title, r.ingredients, r.instructions, r.image_path 
+    FROM favorites f
+    JOIN recipes r ON f.recipe_id = r.id
+    WHERE f.user_id = ?
+  `;
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('Chyba při načítání oblíbených:', err);
+            return res.status(500).send('Chyba serveru');
+        }
+        res.json(results);
+    });
+});
+
+app.get('/api/favorites/:recipeId', checkAuthentication, (req, res) => {
+    const recipeId = req.params.recipeId;
+    const userId = req.session.userId;
+
+    db.query('SELECT * FROM favorites WHERE user_id = ? AND recipe_id = ?', [userId, recipeId], (err, results) => {
+        if (err) {
+            console.error('Chyba při kontrole oblíbeného:', err);
+            return res.status(500).send('Chyba serveru');
+        }
+        res.json({ isFavorite: results.length > 0 });
+    });
+});
 
 
 // Spuštění serveru

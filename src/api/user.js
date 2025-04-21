@@ -29,7 +29,20 @@ class User {
 
   async register(username, password, callback) {
     try {
-      // Check if username already exists
+      const forbiddenWords = ['nig', 'fuck', 'shit', 'bitch', 'asshole', 'cunt', 'kurva', 'debil', 'idiot'];
+
+      // Normalize username (bez diakritiky, malá písmena)
+      const normalizedUsername = username
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+
+      // Kontrola zakázaných výrazů
+      if (forbiddenWords.some(word => normalizedUsername.includes(word))) {
+        return callback(null, 'Uživatelské jméno obsahuje nevhodné výrazy');
+      }
+
+      // Kontrola, zda username existuje
       this.db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
         if (err) {
           console.error('Chyba při kontrole uživatelského jména:', err);
@@ -40,20 +53,20 @@ class User {
           return callback(null, 'Uživatelské jméno již existuje');
         }
 
-        // Hash password
+        // Hash hesla
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert new user into the database
+        // Vložení uživatele
         this.db.query(
-          'INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)',
-          [username, hashedPassword, 2],
-          (err, result) => {
-            if (err) {
-              console.error('Chyba při registraci uživatele:', err);
-              return callback(err, null);
+            'INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)',
+            [username, hashedPassword, 2],
+            (err, result) => {
+              if (err) {
+                console.error('Chyba při registraci uživatele:', err);
+                return callback(err, null);
+              }
+              callback(null, result);
             }
-            callback(null, result);
-          }
         );
       });
     } catch (err) {

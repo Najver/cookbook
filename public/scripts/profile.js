@@ -82,7 +82,6 @@ document.getElementById('add-recipe-form').addEventListener('submit', async (eve
 });
 
 
-// Načte recepty přihlášeného uživatele a vykreslí je ve stejné mřížce jako na index stránce
 async function loadMyRecipes() {
     try {
         const response = await fetch('/api/myrecipes');
@@ -95,7 +94,7 @@ async function loadMyRecipes() {
 
         recipes.forEach(recipe => {
             const recipeElement = document.createElement('div');
-            recipeElement.classList.add('recipe'); // Použijeme stejný CSS styl jako na indexu
+            recipeElement.classList.add('recipe');
 
             // Vytvoříme strukturu receptové karty s tlačítkem pro smazání
             recipeElement.innerHTML = `
@@ -109,8 +108,19 @@ async function loadMyRecipes() {
             // Přidáme událost kliknutí pro tlačítko smazání, aby se zabránilo spuštění kliknutí na celou kartu
             const deleteButton = recipeElement.querySelector('.delete-button');
             deleteButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // Zabrání přesměrování při kliknutí na tlačítko
-                if (confirm('Opravdu chcete smazat tento recept?')) {
+                e.stopPropagation();
+
+                const modal = document.getElementById('confirm-modal');
+                const confirmBtn = document.getElementById('confirm-delete');
+                const cancelBtn = document.getElementById('cancel-delete');
+
+                modal.style.display = 'block';
+
+                cancelBtn.onclick = () => {
+                    modal.style.display = 'none';
+                };
+
+                confirmBtn.onclick = () => {
                     fetch(`/api/recipes/${recipe.id}`, { method: 'DELETE' })
                         .then(response => {
                             if (response.ok) {
@@ -118,12 +128,14 @@ async function loadMyRecipes() {
                             } else {
                                 response.text().then(errorText => alert('Chyba: ' + errorText));
                             }
+                            modal.style.display = 'none';
                         })
                         .catch(error => {
                             console.error(error);
                             alert('Chyba při mazání receptu.');
+                            modal.style.display = 'none';
                         });
-                }
+                };
             });
 
             // Kliknutím mimo tlačítko se uživatel přesměruje na detail receptu
@@ -139,6 +151,5 @@ async function loadMyRecipes() {
     }
 }
 
-// Zavoláme funkce pro načtení profilu a receptů
 loadProfile();
 loadMyRecipes();

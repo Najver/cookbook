@@ -21,6 +21,10 @@ app.get('/', checkAuthentication, (req, res) => {
   app.get('/profile', checkAuthentication, (req, res) => {
     res.sendFile(path.join(__dirname, '../html/profile.html'));
   });
+
+  app.get('/favorites', checkAuthentication, (req, res) => {
+    res.sendFile(path.join(__dirname, '../html/favorites.html'));
+  });
 }
 
 module.exports = {defineHTML}

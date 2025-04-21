@@ -16,11 +16,13 @@
     </header>
   
     <main>
-        <button id="add-recipe-button" class="add-recipe-btn">Přidej recept</button>
       <div id="profile">
         <h1>Váše recepty</h1>
         <div id="my-recipes-container"></div>
       </div>
+        <div class="center-add-recipe-button">
+            <button id="add-recipe-button" class="add-recipe-btn">Přidej recept</button>
+        </div>>
     </main>
   
     <!-- Modal for adding recipe -->
@@ -59,6 +61,17 @@
           <button type="submit">Přidat recept</button>
         </form>
       </div>
+    </div>
+
+    <!-- Modální okno pro potvrzení mazání -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p>Opravdu chcete smazat tento recept?</p>
+            <div class="modal-actions">
+                <button id="cancel-delete" class="modal-button cancel">Zrušit</button>
+                <button id="confirm-delete" class="modal-button confirm">Smazat</button>
+            </div>
+        </div>
     </div>
 
     <script src="/scripts/profile.js"></script>

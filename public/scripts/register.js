@@ -19,4 +19,15 @@ document.getElementById("register-form").addEventListener("submit", function (e)
         errorDiv.textContent = "Heslo musí mít alespoň 8 znaků.";
         errorDiv.style.display = 'block';
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const errorDiv = document.getElementById('error-message');
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+
+        if (error) {
+            errorDiv.textContent = decodeURIComponent(error);
+            errorDiv.style.display = 'block';
+        }
+    });
 });

@@ -1,24 +1,41 @@
 // Funkce pro načtení receptů s vyhledáváním a kategoriemi
-async function loadRecipes(url = '/api/recipes') {
+let currentOffset = 0;
+const limit = 12;
+let isFiltering = false;
+const sortSelect = document.getElementById('sort-select');
+
+
+async function loadRecipes(url = `/api/recipes?limit=${limit}&offset=${currentOffset}`, reset = false) {
     try {
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Chyba při načítání receptů');
         }
+
         const recipes = await response.json();
         const container = document.getElementById('recipes-container');
-        container.innerHTML = '';
+
+        if (reset) {
+            container.innerHTML = '';
+            currentOffset = 0;
+        }
+
+        if (recipes.length === 0 && currentOffset === 0) {
+            container.innerHTML = '<p>Žádné recepty k zobrazení.</p>';
+            document.getElementById('load-more-btn').style.display = 'none';
+            return;
+        }
 
         recipes.forEach(recipe => {
             const recipeElement = document.createElement('div');
             recipeElement.classList.add('recipe');
 
             recipeElement.innerHTML = `
-                <h2>${recipe.title}</h2>
-                ${recipe.image_path ? `<img src="${recipe.image_path}" alt="${recipe.title}" class="recipe-image">` : ''}
-                <p><strong>Ingredience:</strong> ${recipe.ingredients}</p>
-                <p><strong>Postup:</strong> ${recipe.instructions}</p>
-            `;
+        <h2>${recipe.title}</h2>
+        ${recipe.image_path ? `<img src="${recipe.image_path}" alt="${recipe.title}" class="recipe-image">` : ''}
+        <p><strong>Ingredience:</strong> ${recipe.ingredients}</p>
+        <p><strong>Postup:</strong> ${recipe.instructions}</p>
+      `;
 
             recipeElement.addEventListener('click', () => {
                 window.location.href = `/recipe/${recipe.id}`;
@@ -27,11 +44,21 @@ async function loadRecipes(url = '/api/recipes') {
             container.appendChild(recipeElement);
         });
 
+        currentOffset += limit;
+
+        if (recipes.length < limit) {
+            document.getElementById('load-more-btn').style.display = 'none';
+        } else {
+            document.getElementById('load-more-btn').style.display = 'block';
+        }
+
     } catch (error) {
         console.error(error);
         document.getElementById('recipes-container').innerHTML = '<p>Chyba při načítání receptů.</p>';
     }
 }
+
+
 // Načtení tagů do dropdownu
 async function loadTags() {
     try {
@@ -72,18 +99,20 @@ document.addEventListener('click', (event) => {
 async function applyFilters() {
     const query = document.querySelector('.search-bar').value.trim();
     const checkedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked'))
-                            .map(tag => tag.value);
-    
-    let searchUrl = '/api/recipes/search?';
-    if (query) {
-        searchUrl += `q=${encodeURIComponent(query)}&`;
-    }
-    if (checkedTags.length > 0) {
-        searchUrl += `tags=${checkedTags.join(',')}`;
-    }
+        .map(tag => tag.value);
 
-    loadRecipes(searchUrl);
+    const sort = sortSelect.value;
+    isFiltering = query !== '' || checkedTags.length > 0;
+    currentOffset = 0;
+
+    let searchUrl = `/api/recipes/search?limit=${limit}&offset=${currentOffset}&sort=${sort}`;
+
+    if (query) searchUrl += `&q=${encodeURIComponent(query)}`;
+    if (checkedTags.length > 0) searchUrl += `&tags=${checkedTags.join(',')}`;
+
+    await loadRecipes(searchUrl, true);
 }
+
 
 // Event listener na checkboxy
 document.getElementById('tag-checkboxes').addEventListener('change', applyFilters);
@@ -96,6 +125,27 @@ document.querySelector('.search-bar').addEventListener('keydown', (event) => {
         applyFilters();
     }
 });
+
+document.getElementById('load-more-btn').addEventListener('click', () => {
+    const query = document.querySelector('.search-bar').value.trim();
+    const checkedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked'))
+        .map(tag => tag.value);
+    const sort = sortSelect.value;
+
+    let url;
+    if (isFiltering) {
+        url = `/api/recipes/search?limit=${limit}&offset=${currentOffset}&sort=${sort}`;
+        if (query) url += `&q=${encodeURIComponent(query)}`;
+        if (checkedTags.length > 0) url += `&tags=${checkedTags.join(',')}`;
+    } else {
+        url = `/api/recipes?limit=${limit}&offset=${currentOffset}&sort=${sort}`;
+    }
+
+    loadRecipes(url);
+});
+
+sortSelect.addEventListener('change', applyFilters);
+
 
 // Načíst tagy a recepty po načtení stránky
 window.onload = () => {
